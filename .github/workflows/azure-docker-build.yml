@@ -1,0 +1,65 @@
+name: Build and Push Docker Image to Azure Container Registry
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository (sparse: src/)
+        uses: actions/checkout@v4
+        with:
+          # keep full history for build caches if you want; set to 0 to minimize
+          fetch-depth: 0
+          sparse-checkout: |
+            src/
+
+      - name: Set up QEMU (for multi-platform builds, optional)
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Create .env from secret (kept only on runner)
+        # avoid printing the secret; pass it only via env so logs won't show its contents
+        env:
+          ENV_SECRET: ${{ secrets.ENV }}
+        run: |
+          # ensure src exists (checkout sparse may create it)
+          mkdir -p src
+          # write secret to file without printing to logs
+          printf '%s' "$ENV_SECRET" > src/.env
+          # tighten permissions while file exists on runner
+          chmod 600 src/.env
+
+      - name: Build and push image to ACR
+        uses: docker/build-push-action@v5
+        with:
+          context: ./src
+          file: ./src/Dockerfile
+          push: true
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/your-image-name:latest
+          # optional: enable cache if you have a registry cache set up
+          # cache-from: type=registry,ref=${{ secrets.ACR_LOGIN_SERVER }}/your-image-name:cache
+          # cache-to: type=registry,ref=${{ secrets.ACR_LOGIN_SERVER }}/your-image-name:cache,mode=max
+
+      - name: Remove .env file from runner (always)
+        if: always()
+        run: |
+          rm -f src/.env
