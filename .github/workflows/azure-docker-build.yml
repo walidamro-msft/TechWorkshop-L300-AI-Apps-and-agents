@@ -54,7 +54,7 @@ jobs:
           context: ./src
           file: ./src/Dockerfile
           push: true
-          tags: ${{ secrets.ACR_LOGIN_SERVER }}/your-image-name:latest
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/chat-app:latest
           # optional: enable cache if you have a registry cache set up
           # cache-from: type=registry,ref=${{ secrets.ACR_LOGIN_SERVER }}/your-image-name:cache
           # cache-to: type=registry,ref=${{ secrets.ACR_LOGIN_SERVER }}/your-image-name:cache,mode=max
