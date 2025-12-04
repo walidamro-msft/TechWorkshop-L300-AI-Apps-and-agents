@@ -3,7 +3,7 @@ param userPrincipalId string
 
 @minLength(1)
 @description('Primary location for all resources.')
-param location string = resourceGroup().location
+param location string = 'swedencentral'
 
 var cosmosDbName = '${uniqueString(resourceGroup().id)}-cosmosdb'
 var cosmosDbDatabaseName = 'zava'
